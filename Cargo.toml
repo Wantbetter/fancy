@@ -1,0 +1,15 @@
+[package]
+name = "fancy"
+version = "0.1.0"
+authors = ["halo <kkangwfu@163.com>"]
+edition = "2018"
+
+[dependencies]
+actix = { git = "https://github.com/actix/actix" }
+actix-web = { git = "https://github.com/actix/actix-web" }
+
+
+[workspace]
+members = [
+    "seis",
+]
