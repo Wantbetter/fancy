@@ -451,14 +451,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fancy"
-version = "0.1.0"
-dependencies = [
- "actix 0.7.9 (git+https://github.com/actix/actix)",
- "actix-web 0.7.15 (git+https://github.com/actix/actix-web)",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1146,6 +1138,14 @@ dependencies = [
 name = "sha1"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "show"
+version = "0.1.0"
+dependencies = [
+ "actix 0.7.9 (git+https://github.com/actix/actix)",
+ "actix-web 0.7.15 (git+https://github.com/actix/actix-web)",
+]
 
 [[package]]
 name = "signal-hook"

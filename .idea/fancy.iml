@@ -10,7 +10,12 @@
       <sourceFolder url="file://$MODULE_DIR$/seis/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/seis/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/seis/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/show/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/show/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/show/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/show/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/seis/target" />
+      <excludeFolder url="file://$MODULE_DIR$/show/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

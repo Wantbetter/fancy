@@ -74,8 +74,7 @@ impl Grd {
         grd_file.write_f64::<LittleEndian>(self.x_size).unwrap();
         grd_file.write_f64::<LittleEndian>(self.y_size).unwrap();
         grd_file.write_f64::<LittleEndian>(self.z_min).unwrap();
-        grd_file.write_f64::<LittleEndian>(self.z_max).u
-        nwrap();
+        grd_file.write_f64::<LittleEndian>(self.z_max).unwrap();
         grd_file.write(&vec![0u8; 24]);
         let data_slice = self.data.as_slice();
         for i in 0..data_slice.len() {
