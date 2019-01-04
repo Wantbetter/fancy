@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 actix = { git = "https://github.com/actix/actix" }
 actix-web = { git = "https://github.com/actix/actix-web" }
+env_logger = "0.5"

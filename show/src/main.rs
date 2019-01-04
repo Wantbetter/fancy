@@ -1,21 +1,46 @@
 extern crate actix;
 extern crate actix_web;
+extern crate env_logger;
+
+use std::{env, io};
 
 use actix::Actor;
-use actix_web::{http, server, App, HttpRequest};
-use std::cell::Cell;
+use actix_web::{http, server, App, HttpRequest, HttpResponse, Result, middleware};
+use actix_web::middleware::session;
+use actix_web::http::{header, Method, StatusCode};
 
-struct AppState {
-    counter: Cell<usize>,
-}
+fn index(req: &HttpRequest) -> Result<HttpResponse> {
+    println!("{:?}", req);
 
-fn index(req: &HttpRequest<AppState>) -> String {
-    let count = req.state().counter.get() + 1;
-    req.state().counter.set(count);
-
-    format!("Request number: {}", count)
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type("text/html; charset=utf-8")
+        .body(include_str!("../static/index.html")))
 }
 
 fn main() {
-    let a = 1;
+    env::set_var("RUST_LOG", "actix_web=debug");
+    env::set_var("RUST_BACKTRACE", "1");
+    env_logger::init();
+
+    let sys = actix::System::new("fancy");
+
+    let addr = server::new(
+        || App::new()
+            .middleware(middleware::Logger::default())
+            .middleware(session::SessionStorage::new(
+                session::CookieSessionBackend::signed(&[0; 32]).secure(false)
+            ))
+            .resource("/index", |r| r.f(index))
+            .resource("/", |r| r.method(Method::GET).f(|req| {
+                println!("{:?}", req);
+                HttpResponse::Found()
+                    .header(header::LOCATION, "static/index.html")
+                    .finish()
+            })))
+        .bind("127.0.0.1:8080").expect("Can not bind to 127.0.0.1:8080")
+        .shutdown_timeout(0)
+        .start();
+
+    println!("Starting http server: 127.0.0.1:8080");
+    let _ = sys.run();
 }
