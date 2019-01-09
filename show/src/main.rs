@@ -35,6 +35,7 @@ fn main() {
                 "/",
                 fs::StaticFiles::new("show/static/").unwrap().index_file("index.html")
             ))
+
         .bind("127.0.0.1:8080").expect("Can not bind to 127.0.0.1:8080")
         .shutdown_timeout(0)
         .start();
