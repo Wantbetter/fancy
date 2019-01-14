@@ -4,7 +4,6 @@ extern crate env_logger;
 
 use std::{env, io};
 
-use actix::Actor;
 use actix_web::{fs, http, server, App, HttpRequest, HttpResponse, Result, middleware};
 use actix_web::middleware::session;
 use actix_web::http::{header, Method, StatusCode};
