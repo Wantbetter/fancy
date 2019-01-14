@@ -24,7 +24,7 @@ fn main() {
     fs::copy(config_file, &copy_config_file).expect("error in copy config file");
     println!("{}", copy_exe_file);
     //TODO: recover dir
-    env::set_current_dir(path).expect("error in set dir");  
+    env::set_current_dir(path).expect("error in set dir");
     let mut exe = Command::new(copy_exe_file);
     println!("{:?}", exe.status());
 }
