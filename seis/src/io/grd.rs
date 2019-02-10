@@ -11,6 +11,7 @@ pub enum GrdFileType {
     Ascii,
 }
 
+#[derive(Debug, Clone)]
 pub struct Grd {
     mark: String, //file type
     rows: i32,    //number of rows
@@ -22,6 +23,29 @@ pub struct Grd {
     z_min: f64, //minimum Z value within the grid
     z_max: f64,
     pub data: DMatrix<f64>,
+}
+
+impl Grd {
+    pub fn ellipse(&mut self, x0: f64, y0: f64, a: f64, b: f64, z: f64) {
+        let x_min = x0 - a;
+        let x_max = x0 + a;
+        let y_min = y0 - a;
+        let y_max = y0 + a;
+        let x_start = x_min.floor() as usize;
+        let x_end = x_max.ceil() as usize;
+        let y_start = y_min.floor() as usize;
+        let y_end = y_max.ceil() as usize;
+        for i in x_start..x_end {
+            for j in y_start..y_end {
+                let if64 = i as f64;
+                let jf64 = j as f64;
+                let d = (if64 - x0) * (if64 - x0) / (a * a) + (jf64 - y0) * (jf64 - y0) / (b * b);
+                if d < 1.0 {
+                    self.data[(i, j)] = z;
+                }
+            }
+        }
+    }
 }
 
 impl Grd {
@@ -65,6 +89,7 @@ impl Grd {
     }
 
     fn write_binary_file(&self, mut grd_file: File) {
+        // not complete
         grd_file.write(&b"DSRB"[..]);
         grd_file.write(&vec![0u8; 16]);
         grd_file.write_i32::<LittleEndian>(self.rows).unwrap();
@@ -116,7 +141,7 @@ impl Grd {
             // column-major matrix
             for j in 0usize..cols as usize {
                 let mut v_buf = [0u8; 8];
-                data[(j, i)] = grd_file.read_f64::<LittleEndian>().unwrap();
+                data[(i, j)] = grd_file.read_f64::<LittleEndian>().unwrap();
             }
         }
 
@@ -141,19 +166,22 @@ impl Grd {
 
         let x = vec![1, 2, 3];
         let mark = Grd::process_error(lines.next());
-        let (cols, rows) = Grd::process_split::<i32>(Grd::process_error(lines.next()));
-        let (xll, xend) = Grd::process_split::<f64>(Grd::process_error(lines.next()));
-        let (yll, yend) = Grd::process_split::<f64>(Grd::process_error(lines.next()));
-        let (z_min, z_max) = Grd::process_split::<f64>(Grd::process_error(lines.next()));
+        let (cols, rows) = Grd::process_split::<i32>(&Grd::process_error(lines.next()));
+        let (xll, xend) = Grd::process_split::<f64>(&Grd::process_error(lines.next()));
+        let (yll, yend) = Grd::process_split::<f64>(&Grd::process_error(lines.next()));
+        let (z_min, z_max) = Grd::process_split::<f64>(&Grd::process_error(lines.next()));
         let x_size = (xend - xll) / (cols - 1) as f64;
         let y_size = (yend - yll) / (rows - 1) as f64;
 
-        let data_intern: Vec<f64> = Grd::process_error(lines.next())
-            .split(' ')
+        let r: Vec<_> = lines.map(|f| f.unwrap()).collect();
+        let data_str = r.connect(" ");
+        let data_intern: Vec<f64> = data_str
+            .split_whitespace()
             .map(|x| x.parse::<f64>().unwrap())
+            .rev()  //grd文件坐标从底向上
             .collect();
 
-        let data = DMatrix::from_column_slice(cols as usize, rows as usize, &data_intern); // column-major matrix.
+        let data = DMatrix::from_row_slice(rows as usize, cols as usize, &data_intern); // column-major matrix.
 
         Grd {
             mark,
@@ -173,14 +201,18 @@ impl Grd {
         line.unwrap().unwrap()
     }
 
-    fn process_split<U>(s: String) -> (U, U)
+    fn process_split<U>(s: &str) -> (U, U)
     where
         U: std::str::FromStr,
         <U as std::str::FromStr>::Err: std::fmt::Debug,
     {
-        let mut ss = s.split(' ');
-        let v1 = ss.next().unwrap().parse::<U>().unwrap();
-        let v2 = ss.next().unwrap().parse::<U>().unwrap();
+        let mut ss: Vec<&str> = s
+            .trim()
+            .split(char::is_whitespace)
+            .filter(|item| *item != "")
+            .collect();
+        let v1 = ss[0].parse::<U>().unwrap();
+        let v2 = ss[1].parse::<U>().unwrap();
         (v1, v2)
     }
 
@@ -217,24 +249,26 @@ impl Grd {
     }
 }
 
-impl Index<(usize, usize)> for Grd {
-    type Output = f64;
-
-    fn index(&self, index: (usize, usize)) -> &f64 {
-        assert!(
-            index.0 < self.rows as usize && index.1 < self.cols as usize,
-            "index out of bounds."
-        );
-        &self.data[(index.1, index.0)]
-    }
-}
-
-impl IndexMut<(usize, usize)> for Grd {
-    fn index_mut(&mut self, index: (usize, usize)) -> &mut f64 {
-        assert!(
-            index.0 < self.rows as usize && index.1 < self.cols as usize,
-            "index out of bounds."
-        );
-        &mut self.data[(index.1, index.0)]
-    }
-}
+//弃用
+//内部用column-major方式存储数据，因此要进行转换。
+//impl Index<(usize, usize)> for Grd {
+//    type Output = f64;
+//
+//    fn index(&self, index: (usize, usize)) -> &f64 {
+//        assert!(
+//            index.0 < self.rows as usize && index.1 < self.cols as usize,
+//            "index out of bounds."
+//        );
+//        &self.data[(index.1, index.0)]
+//    }
+//}
+//
+//impl IndexMut<(usize, usize)> for Grd {
+//    fn index_mut(&mut self, index: (usize, usize)) -> &mut f64 {
+//        assert!(
+//            index.0 < self.rows as usize && index.1 < self.cols as usize,
+//            "index out of bounds."
+//        );
+//        &mut self.data[(index.1, index.0)]
+//    }
+//}

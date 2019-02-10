@@ -1,7 +1,7 @@
 extern crate nalgebra as na;
 
-pub mod io;
 pub mod forward;
+pub mod io;
 
 #[cfg(test)]
 pub mod tests {}
