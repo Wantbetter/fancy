@@ -46,6 +46,7 @@ impl Grd {
             }
         }
     }
+    
 }
 
 impl Grd {
@@ -79,13 +80,28 @@ impl Grd {
         writeln!(grd_file, "{} {}", self.yll, y_end);
         writeln!(grd_file, "{} {}", self.z_min, self.z_max);
 
-        let vec: Vec<String> = self
-            .data
-            .as_slice()
-            .iter()
-            .map(|x| x.clone().to_string())
-            .collect();
-        writeln!(grd_file, "{}", vec.join(" "));
+        let data = &self.data;
+        let rows = data.nrows();
+        let cols = data.ncols();
+
+        let mut str_vec = Vec::new();
+        for i in (0..rows).rev() {
+            let row_data = data.row(i);
+            let mut vec_data = vec![0.0f64; cols];
+            for j in 0..cols {
+                vec_data[j] = row_data[j];
+            }
+            let tmp_vec: Vec<_> = vec_data.iter().map(|x| x.to_string()).collect();
+            let tmp_str = tmp_vec.join("   ");
+            str_vec.push(tmp_str);
+        }
+        // let vec: Vec<String> = self
+        //     .data
+        //     .as_slice()
+        //     .iter()
+        //     .map(|x| x.clone().to_string())
+        //     .collect();
+        writeln!(grd_file, "{}", str_vec.join("\n"));
     }
 
     fn write_binary_file(&self, mut grd_file: File) {
@@ -178,7 +194,7 @@ impl Grd {
         let data_intern: Vec<f64> = data_str
             .split_whitespace()
             .map(|x| x.parse::<f64>().unwrap())
-            .rev()  //grd文件坐标从底向上
+            .rev()
             .collect();
 
         let data = DMatrix::from_row_slice(rows as usize, cols as usize, &data_intern); // column-major matrix.

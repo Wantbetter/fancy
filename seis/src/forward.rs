@@ -112,34 +112,59 @@ impl Default for ForwardModelTemplate {
 }
 
 impl ForwardModelTemplate {
-    // pub fn to_str_vec(&self) -> Vec<String> {
-    //     let r = Vec::new();
-
-    // }
-
-    fn make_line(args: &[&str]) -> String {
-        args.join(",").to_string()
+    fn to_str_vec(&self) -> Vec<String> {
+        let mut str_vec = Vec::new();
+        str_vec.push(format!("{},{}", self.diff_order, self.absorb_boundary_thickness));
+        str_vec.push(format!("{},{},{},{}", self.dt, self.points, self.main_freq, self.delay));
+        str_vec.push(format!("{},{},{}", self.epicentre_x, self.epicentre_z, self.seismometers_z));
+        let source_value = match self.source_type {
+            PointSourceType::Harmomegathus => 1,
+            PointSourceType::Vertical => 2,
+            PointSourceType::Horizontal => 3,
+        };
+        str_vec.push(format!("{}", source_value));
+        str_vec.push(format!("{}", self.vp_grd));
+        str_vec.push(format!("{}", self.vs_grd));
+        str_vec.push(format!("{}", self.pp_grd));
+        str_vec.push(format!("{}", self.wavelet_bln));
+        str_vec.push(format!("{}", self.cdp_x2));
+        str_vec.push(format!("{}", self.cdp_z2));
+        str_vec.push(format!("{}", self.wave_field_x));
+        str_vec.push(format!("{}", self.wave_field_z));
+        str_vec.push(format!("{},{}", self.self_start, self.self_end));
+        str_vec
     }
 
     pub fn write(&self, dir_name: &str) {
         let path = format!("{}\\PARAMETER.txt", dir_name);
         let mut file = fs::File::create(path).expect("error in create parameter file");
         let model_template = vec![
-            "!差分阶数，吸收边界厚度\n",
-            "!采样间隔，采样点数，震源子波主频，震源子波延迟时\n",
-            "!震源所在X、Z方向节点序号，检波点所在Z方向节点序号\n",
-            "!点震源的类型：1胀缩震源，2垂直震源，3水平震源\n",
-            "!模型的纵波速度\n",
-            "!模型的横波速度\n",
-            "!模型的密度\n",
-            "!保存震源子波的文件名\n",
-            "!保存共炮点记录水平分量的文件名\n",
-            "!保存共炮点记录垂直分量的文件名\n",
-            "!保存波场水平分量的文件名\n",
-            "!保存波场垂直分量的文件名\n",
-            "!自激自收区域的起点、终点位置\n",
+            "!差分阶数，吸收边界厚度",
+            "!采样间隔，采样点数，震源子波主频，震源子波延迟时",
+            "!震源所在X、Z方向节点序号，检波点所在Z方向节点序号",
+            "!点震源的类型：1胀缩震源，2垂直震源，3水平震源",
+            "!模型的纵波速度",
+            "!模型的横波速度",
+            "!模型的密度",
+            "!保存震源子波的文件名",
+            "!保存共炮点记录水平分量的文件名",
+            "!保存共炮点记录垂直分量的文件名",
+            "!保存波场水平分量的文件名",
+            "!保存波场垂直分量的文件名",
+            "!自激自收区域的起点、终点位置",
         ];
+        // let model_template: Vec<_> = model_template.iter().map(|x| x.to_string()).collect();
         dbg!(&model_template);
-        let forward_template = ForwardModelTemplate::default();
+        let model_values = self.to_str_vec();
+        assert!(model_template.len() == model_values.len());
+
+        for i in 0..model_template.len() {
+            writeln!(file, "{}", model_template[i]);
+            writeln!(file, "{}", model_values[i]);
+        }
+    }
+
+    pub fn epicentre_x(&mut self, value: i32) {
+        self.epicentre_x = value;
     }
 }
