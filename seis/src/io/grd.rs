@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Error, SeekFrom};
 use std::ops::{Index, IndexMut};
+use std::path::Path;
 
 pub enum GrdFileType {
     Binary,
@@ -46,12 +47,35 @@ impl Grd {
             }
         }
     }
+
+    /// 炮间距为一个道距
+    /// space: 道距
+    /// offset: 偏移距
+    /// 48道
+    pub fn extract(&mut self,  out_dir: &str, out_name: &str, epicenter_x: i32, traces_num: usize, space: u32, offset: u32) {
+        let data = &self.data;
+        let mut sample = data.columns(epicenter_x as usize, traces_num * space as usize + offset as usize).clone_owned();
+        let mut new_grd = self.clone();
+        new_grd.rows = sample.nrows() as i32;
+        new_grd.cols = sample.ncols() as i32;
+        new_grd.x_size = self.x_size();
+        new_grd.y_size = self.y_size();
+        new_grd.xll = 0.0;
+        new_grd.yll = self.yll;
+        new_grd.z_min = sample.min() as f64;
+        new_grd.z_max = sample.max() as f64;
+        std::mem::replace(&mut self.data, sample);
+        let out_path = format!("{}\\{}{:02}", out_dir, out_name, 1); 
+    }
     
 }
 
 impl Grd {
     pub fn from_grd_file(filename: &str) -> Grd {
         let mut grd_file = BufReader::new(File::open(filename).expect("error in opening grd file"));
+        // let path = Path::new(filename);
+
+        // let rela_filename = path.file_name().expect("error in extract relative file name");
 
         let mark = grd_file.read_str(4);
 

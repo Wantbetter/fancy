@@ -38,13 +38,17 @@ fn run_forward(exe_file: &str, config_file: &str) {
     println!("{:?}", exe.status());
 }
 
-enum A {
-    AA(1),
-    BB(2),
-}
-
 fn main() {
     // let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
+    println!("{:02}", 1);
+    // let data = &model_vp_grd.data;
+
+
     // model_vp_grd.write_file("hello.grd", GrdFileType::Ascii);
-    
+    // let mut dm1 = na::DMatrix::from_vec(4, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]);
+    // let mut cols = dm1.columns_mut(0, 2);
+    // let tmp = cols.clone_owned();
+    // cols[(0, 0)] = 11.0;
+    // dbg!(dm1);
+    // dbg!(tmp);
 }
