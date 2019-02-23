@@ -39,16 +39,26 @@ fn run_forward(exe_file: &str, config_file: &str) {
 }
 
 fn main() {
-    // let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
-    println!("{:02}", 1);
-    // let data = &model_vp_grd.data;
+//     let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
+//     model_vp_grd.extract(r"F:\毕设-研究生\测试", "3-layersvp", 0, 48, 1, 2);
+    let paths = std::fs::read_dir(r"F:\毕设-研究生\data\三层水平均匀介质模型").expect("error in read model grd file.");
+    let file_names : Vec<_> = paths
+        .map(|path| {
+            path.unwrap().path().to_str().unwrap().to_string()
+        })
+        .filter( |file_name| {
+            file_name.ends_with("vp.grd") || file_name.ends_with("vs.grd") || file_name.ends_with("pp.grd")
+        })
+        .collect();
+    dbg!(&file_names);
 
+    let rela_file_names: Vec<_> = file_names
+        .iter()
+        .map(|s| {
+            let ix = s.rfind("\\").unwrap();
+            &s[(ix+1)..]
+        })
+        .collect();
 
-    // model_vp_grd.write_file("hello.grd", GrdFileType::Ascii);
-    // let mut dm1 = na::DMatrix::from_vec(4, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]);
-    // let mut cols = dm1.columns_mut(0, 2);
-    // let tmp = cols.clone_owned();
-    // cols[(0, 0)] = 11.0;
-    // dbg!(dm1);
-    // dbg!(tmp);
+    dbg!(rela_file_names);
 }

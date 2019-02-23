@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::Path;
 use std::process::Command;
+use crate::io::grd::Grd;
 
 pub struct ForwardBridge {
     exe_file: String,    // source exe file path
@@ -31,6 +32,28 @@ impl ForwardBridge {
 }
 
 impl ForwardBridge {
+    fn vp_vs_pp_filename(dir: &str) -> Vec<String> {  //vp vs pp顺序不定
+        let paths = std::fs::read_dir(dir).expect("error in read model grd file.");
+        let file_names : Vec<_> = paths
+            .map(|path| {
+                path.unwrap().path().to_str().unwrap().to_string()
+            })
+            .filter( |file_name| {
+                file_name.ends_with("vp.grd") || file_name.ends_with("vs.grd") || file_name.ends_with("pp.grd")
+            })
+            .collect();
+//        assert_eq!(file_names.len() == 3);
+        file_names
+    }
+
+    pub fn model_ready(&self) {
+        let vp_vs_pp = ForwardBridge::vp_vs_pp_filename(&self.holder_dir);
+        for filename in vp_vs_pp {
+            let grd = Grd::from_grd_file(&filename);
+//            grd.extract(self.holder_dir, )
+        }
+    }
+
     pub fn run(&self) {
         let target_relative_dir = format!("{}{}", self.target_prev, self.count);
         let target_dir = format!("{}\\{}", self.holder_dir, target_relative_dir);

@@ -1,6 +1,7 @@
 use crate::io::ReadEx;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use na::DMatrix;
+use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Error, SeekFrom};
@@ -8,7 +9,7 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 
 pub enum GrdFileType {
-    Binary,
+    // Binary,
     Ascii,
 }
 
@@ -49,33 +50,41 @@ impl Grd {
     }
 
     /// 炮间距为一个道距
-    /// space: 道距
+    /// space: 道间距
     /// offset: 偏移距
     /// 48道
-    pub fn extract(&mut self,  out_dir: &str, out_name: &str, epicenter_x: i32, traces_num: usize, space: u32, offset: u32) {
-        let data = &self.data;
-        let mut sample = data.columns(epicenter_x as usize, traces_num * space as usize + offset as usize).clone_owned();
-        let mut new_grd = self.clone();
-        new_grd.rows = sample.nrows() as i32;
-        new_grd.cols = sample.ncols() as i32;
-        new_grd.x_size = self.x_size();
-        new_grd.y_size = self.y_size();
-        new_grd.xll = 0.0;
-        new_grd.yll = self.yll;
-        new_grd.z_min = sample.min() as f64;
-        new_grd.z_max = sample.max() as f64;
-        std::mem::replace(&mut self.data, sample);
-        let out_path = format!("{}\\{}{:02}", out_dir, out_name, 1); 
+    pub fn extract(&mut self,  out_dir: &str, out_name: &str, epicenter_start_x: i32, traces_num: usize, space: u32, offset: u32) {
+        let data = & self.data;
+        let max_len = self.cols - traces_num as i32 - (offset / space) as i32;
+        for i in 0..max_len as usize {
+            let mut sample = data.columns(epicenter_start_x as usize, traces_num + (offset / space) as usize).clone_owned();
+            let mut new_grd = self.clone();
+            new_grd.rows = sample.nrows() as i32;
+            new_grd.cols = sample.ncols() as i32;
+            new_grd.x_size = self.x_size();
+            new_grd.y_size = self.y_size();
+            new_grd.xll = 0.0;
+            new_grd.yll = self.yll;
+            new_grd.z_min = sample.min() as f64;
+            new_grd.z_max = sample.max() as f64;
+            std::mem::replace(&mut new_grd.data, sample);
+            let split_point = out_name.len()-2;
+            let out_name_front = &out_name[..split_point];  //模型名字
+            let out_dir_path = Path::new(format!("{}\\{}{:03}", out_dir, out_name_front, i));
+            if !out_dir_path.exists() {
+                fs::create_dir(out_dir_path).expect("error in create grd out  dir");
+            }
+            let out_name_end = &out_name[split_point..]; //模型类型vp/vs/pp
+            let out_path = format!("{}\\{}{:03}{}.grd", out_dir, out_name_front, i, out_name_end);
+            new_grd.write_file(&out_path, GrdFileType::Ascii);
+        }
     }
-    
+
 }
 
 impl Grd {
     pub fn from_grd_file(filename: &str) -> Grd {
         let mut grd_file = BufReader::new(File::open(filename).expect("error in opening grd file"));
-        // let path = Path::new(filename);
-
-        // let rela_filename = path.file_name().expect("error in extract relative file name");
 
         let mark = grd_file.read_str(4);
 
@@ -87,7 +96,7 @@ impl Grd {
 
     pub fn write_file(&self, filename: &str, file_type: GrdFileType) {
         // binary file not supported yet.
-        let mut grd_file = File::create(filename).expect("error in creating grd file");
+        let grd_file = File::create(filename).expect("error in creating grd file");
 
         match file_type {
             GrdFileType::Ascii => self.write_ascii_file(grd_file),
@@ -287,6 +296,7 @@ impl Grd {
     pub fn z_max(&self) -> f64 {
         self.z_max
     }
+
 }
 
 //弃用
