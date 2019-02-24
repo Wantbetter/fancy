@@ -70,12 +70,14 @@ impl Grd {
             std::mem::replace(&mut new_grd.data, sample);
             let split_point = out_name.len()-2;
             let out_name_front = &out_name[..split_point];  //模型名字
-            let out_dir_path = Path::new(format!("{}\\{}{:03}", out_dir, out_name_front, i));
+            let tmp_str = format!("{}\\{}{:03}", out_dir, out_name_front, i);
+            let out_dir_path = Path::new(&tmp_str);
             if !out_dir_path.exists() {
                 fs::create_dir(out_dir_path).expect("error in create grd out  dir");
             }
+            let out_sub_dir = out_dir_path.file_name().unwrap().to_str().unwrap();
             let out_name_end = &out_name[split_point..]; //模型类型vp/vs/pp
-            let out_path = format!("{}\\{}{:03}{}.grd", out_dir, out_name_front, i, out_name_end);
+            let out_path = format!("{}\\{}\\{}{:03}{}.grd", out_dir, out_sub_dir, out_name_front, i, out_name_end);
             new_grd.write_file(&out_path, GrdFileType::Ascii);
         }
     }

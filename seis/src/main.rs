@@ -39,18 +39,18 @@ fn run_forward(exe_file: &str, config_file: &str) {
 }
 
 fn main() {
-//     let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
-//     model_vp_grd.extract(r"F:\毕设-研究生\测试", "3-layersvp", 0, 48, 1, 2);
-    let paths = std::fs::read_dir(r"F:\毕设-研究生\data\三层水平均匀介质模型").expect("error in read model grd file.");
-    let file_names : Vec<_> = paths
-        .map(|path| {
-            path.unwrap().path().to_str().unwrap().to_string()
-        })
-        .filter( |file_name| {
-            file_name.ends_with("vp.grd") || file_name.ends_with("vs.grd") || file_name.ends_with("pp.grd")
-        })
-        .collect();
-    dbg!(&file_names);
+    let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
+    model_vp_grd.extract(r"F:\毕设-研究生\测试", "3-layersvp", 0, 48, 1, 2);
+    // let paths = std::fs::read_dir(r"F:\毕设-研究生\data\三层水平均匀介质模型").expect("error in read model grd file.");
+    // let file_names : Vec<_> = paths
+    //     .map(|path| {
+    //         path.unwrap().path().to_str().unwrap().to_string()
+    //     })
+    //     .filter( |file_name| {
+    //         file_name.ends_with("vp.grd") || file_name.ends_with("vs.grd") || file_name.ends_with("pp.grd")
+    //     })
+    //     .collect();
+    // dbg!(&file_names);
 
     let rela_file_names: Vec<_> = file_names
         .iter()
@@ -60,5 +60,5 @@ fn main() {
         })
         .collect();
 
-    dbg!(rela_file_names);
+    // dbg!(rela_file_names);
 }

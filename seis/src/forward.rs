@@ -46,12 +46,29 @@ impl ForwardBridge {
         file_names
     }
 
-    pub fn model_ready(&self) {
+    pub fn model_ready(&self) {  //模型正演前的准备工作。把grd文件分成小部分方便进行运算
         let vp_vs_pp = ForwardBridge::vp_vs_pp_filename(&self.holder_dir);
-        for filename in vp_vs_pp {
+
+        let rela_file_names: Vec<_> = vp_vs_pp
+            .iter()
+            .map(|s| {
+                let ix = s.rfind("\\").unwrap();
+                &s[(ix+1)..]
+            })
+            .collect();
+
+        for filename in vp_vs_pp {  
             let grd = Grd::from_grd_file(&filename);
-//            grd.extract(self.holder_dir, )
+            let ix_start = filename.rfind("\\").unwrap();
+            let ix_end = filename.rfind(".").unwrap();
+
+            let epicenter_start_x = 0;
+            let traces_num = 48;
+            let space = 1;
+            let offset = 2;
+            grd.extract(self.holder_dir, &filename[ix_start+1..ix_end], epicenter_start_x, traces_num, space, offset);
         }
+
     }
 
     pub fn run(&self) {
