@@ -58,7 +58,7 @@ impl ForwardBridge {
             .collect();
 
         for filename in vp_vs_pp {  
-            let grd = Grd::from_grd_file(&filename);
+            let mut grd = Grd::from_grd_file(&filename);
             let ix_start = filename.rfind("\\").unwrap();
             let ix_end = filename.rfind(".").unwrap();
 
@@ -66,8 +66,14 @@ impl ForwardBridge {
             let traces_num = 48;
             let space = 1;
             let offset = 2;
-            grd.extract(self.holder_dir, &filename[ix_start+1..ix_end], epicenter_start_x, traces_num, space, offset);
+
+            let mut forward_template = ForwardModelTemplate::default();
+
+            forward_template.mod_prefix(&self.target_prev);
+
+            grd.extract(&self.holder_dir, &filename[ix_start+1..ix_end], &mut forward_template, epicenter_start_x, traces_num, space, offset);
         }
+
 
     }
 
@@ -133,7 +139,7 @@ impl Default for ForwardModelTemplate {
             points: 4096,
             main_freq: 10.0,
             delay: 0.1,
-            epicentre_x: 101,
+            epicentre_x: 1,
             epicentre_z: 1,
             seismometers_z: 1,
             source_type: PointSourceType::Harmomegathus,
@@ -143,7 +149,7 @@ impl Default for ForwardModelTemplate {
             wavelet_bln: "wavelet.bln".to_string(),
             cdp_x2: "mod-point-x2.cdp".to_string(),
             cdp_z2: "mod-point-z2.cdp".to_string(),
-            wave_field_x: "mod-point-X.dat".to_string(),
+            wave_field_x: "mod-point-X.dat".to_string(), // 波场快照
             wave_field_z: "mod-point-Z.dat".to_string(),
             self_start: 80,
             self_end: 120,
@@ -176,7 +182,8 @@ impl ForwardModelTemplate {
     }
 
     pub fn write(&self, dir_name: &str) {
-        let path = format!("{}\\PARAMETER.txt", dir_name);
+        let path_str = format!("{}\\PARAMETER.txt", dir_name);
+        let path = Path::new(&path_str);
         let mut file = fs::File::create(path).expect("error in create parameter file");
         let model_template = vec![
             "!差分阶数，吸收边界厚度",
@@ -194,17 +201,37 @@ impl ForwardModelTemplate {
             "!自激自收区域的起点、终点位置",
         ];
         // let model_template: Vec<_> = model_template.iter().map(|x| x.to_string()).collect();
-        dbg!(&model_template);
+        // dbg!(&model_template);
         let model_values = self.to_str_vec();
         assert!(model_template.len() == model_values.len());
 
         for i in 0..model_template.len() {
-            writeln!(file, "{}", model_template[i]);
-            writeln!(file, "{}", model_values[i]);
+            write!(file, "{}\r\n", model_template[i]);
+            write!(file, "{}\r\n", model_values[i]);
         }
     }
 
     pub fn epicentre_x(&mut self, value: i32) {
         self.epicentre_x = value;
+        let start = match (value - 20) {
+            i if i < 0 => 1,
+            _ => value - 20,
+        };
+
+        let end = value + 20;
+
+        self.self_start = start as u32;
+        self.self_end = end as u32;
+
+    }
+
+    pub fn mod_prefix(&mut self, prefix: &str) {
+        self.vp_grd = format!("{}vp.grd", prefix);
+        self.vs_grd = format!("{}vs.grd", prefix);
+        self.pp_grd = format!("{}pp.grd", prefix);
+        self.cdp_x2 = format!("{}-point-x2.cdp", prefix);
+        self.cdp_z2 = format!("{}-point-z2.cdp", prefix);
+        self.wave_field_x = format!("{}-point-X.dat", prefix);  
+        self.wave_field_z = format!("{}-point-Z.dat", prefix);
     }
 }

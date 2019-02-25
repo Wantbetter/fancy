@@ -3,6 +3,8 @@ extern crate nalgebra as na;
 
 use seis::io::grd;
 use seis::io::grd::GrdFileType;
+use seis::forward;
+
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -39,8 +41,14 @@ fn run_forward(exe_file: &str, config_file: &str) {
 }
 
 fn main() {
-    let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
-    model_vp_grd.extract(r"F:\毕设-研究生\测试", "3-layersvp", 0, 48, 1, 2);
+    let forward = forward::ForwardBridge::new(
+        r"I:\dissertation\source\LUPENGmbNEW-PML.exe", r"I:\dissertation\source\PARAMETER.txt", 
+        r"I:\dissertation\models\三层水平均匀介质", "3-layers");
+
+    forward.model_ready();
+
+    // let mut model_vp_grd = grd::Grd::from_grd_file(r"F:\毕设-研究生\data\三层水平均匀介质模型\3-layersvp.grd");
+    // model_vp_grd.extract(r"F:\毕设-研究生\测试", "3-layersvp", 0, 48, 1, 2);
     // let paths = std::fs::read_dir(r"F:\毕设-研究生\data\三层水平均匀介质模型").expect("error in read model grd file.");
     // let file_names : Vec<_> = paths
     //     .map(|path| {
@@ -51,14 +59,5 @@ fn main() {
     //     })
     //     .collect();
     // dbg!(&file_names);
-
-    let rela_file_names: Vec<_> = file_names
-        .iter()
-        .map(|s| {
-            let ix = s.rfind("\\").unwrap();
-            &s[(ix+1)..]
-        })
-        .collect();
-
     // dbg!(rela_file_names);
 }

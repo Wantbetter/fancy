@@ -7,6 +7,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Error, SeekFrom};
 use std::ops::{Index, IndexMut};
 use std::path::Path;
+use crate::forward::ForwardModelTemplate;
 
 pub enum GrdFileType {
     // Binary,
@@ -53,7 +54,7 @@ impl Grd {
     /// space: 道间距
     /// offset: 偏移距
     /// 48道
-    pub fn extract(&mut self,  out_dir: &str, out_name: &str, epicenter_start_x: i32, traces_num: usize, space: u32, offset: u32) {
+    pub fn extract(&mut self,  out_dir: &str, out_name: &str, forward_template: &mut ForwardModelTemplate, epicenter_start_x: i32, traces_num: usize, space: u32, offset: u32) {
         let data = & self.data;
         let max_len = self.cols - traces_num as i32 - (offset / space) as i32;
         for i in 0..max_len as usize {
@@ -77,7 +78,11 @@ impl Grd {
             }
             let out_sub_dir = out_dir_path.file_name().unwrap().to_str().unwrap();
             let out_name_end = &out_name[split_point..]; //模型类型vp/vs/pp
-            let out_path = format!("{}\\{}\\{}{:03}{}.grd", out_dir, out_sub_dir, out_name_front, i, out_name_end);
+            let rela_name = format!("{}{:03}", out_name_front, i);
+            let out_path = format!("{}\\{}\\{}{}.grd", out_dir, out_sub_dir, rela_name, out_name_end);
+            forward_template.mod_prefix(&rela_name);
+            forward_template.epicentre_x(i as i32);
+            forward_template.write(&tmp_str);
             new_grd.write_file(&out_path, GrdFileType::Ascii);
         }
     }
