@@ -50,15 +50,16 @@ impl Grd {
         }
     }
 
+
     /// 炮间距为一个道距
     /// space: 道间距
     /// offset: 偏移距
     /// 48道
-    pub fn extract(&mut self,  out_dir: &str, out_name: &str, forward_template: &mut ForwardModelTemplate, epicenter_start_x: i32, traces_num: usize, space: u32, offset: u32) {
+    pub fn extract(&mut self,  out_dir: &str, out_name: &str, forward_template: &mut ForwardModelTemplate, epicenter_start_x: i32, traces_num: usize, step: usize) {
         let data = & self.data;
-        let max_len = self.cols - traces_num as i32 - (offset / space) as i32;
+        let max_len = self.cols - traces_num as i32;
         for i in 0..max_len as usize {
-            let mut sample = data.columns(epicenter_start_x as usize, traces_num + (offset / space) as usize).clone_owned();
+            let mut sample = data.columns(epicenter_start_x as usize + i * step, traces_num as usize).clone_owned();
             let mut new_grd = self.clone();
             new_grd.rows = sample.nrows() as i32;
             new_grd.cols = sample.ncols() as i32;
@@ -81,7 +82,7 @@ impl Grd {
             let rela_name = format!("{}{:03}", out_name_front, i);
             let out_path = format!("{}\\{}\\{}{}.grd", out_dir, out_sub_dir, rela_name, out_name_end);
             forward_template.mod_prefix(&rela_name);
-            forward_template.epicentre_x(i as i32);
+            forward_template.epicentre_x(1);
             forward_template.write(&tmp_str);
             new_grd.write_file(&out_path, GrdFileType::Ascii);
         }
@@ -229,12 +230,12 @@ impl Grd {
         let x_size = (xend - xll) / (cols - 1) as f64;
         let y_size = (yend - yll) / (rows - 1) as f64;
 
-        let r: Vec<_> = lines.map(|f| f.unwrap()).collect();
-        let data_str = r.connect(" ");
+        let mut r: Vec<_> = lines.map(|f| f.unwrap()).collect();
+        r.reverse();
+        let data_str = r.join(" ");
         let data_intern: Vec<f64> = data_str
             .split_whitespace()
             .map(|x| x.parse::<f64>().unwrap())
-            .rev()
             .collect();
 
         let data = DMatrix::from_row_slice(rows as usize, cols as usize, &data_intern); // column-major matrix.

@@ -4,6 +4,8 @@ use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::Path;
 use std::process::Command;
+use std::time;
+
 use crate::io::grd::Grd;
 
 pub struct ForwardBridge {
@@ -46,8 +48,10 @@ impl ForwardBridge {
         file_names
     }
 
-    pub fn model_ready(&self) {  //模型正演前的准备工作。把grd文件分成小部分方便进行运算
+    pub fn model_ready(&self, mut forward_template: ForwardModelTemplate) {  //模型正演前的准备工作。把grd文件分成小部分方便进行运算
         let vp_vs_pp = ForwardBridge::vp_vs_pp_filename(&self.holder_dir);
+
+        // dbg!(&vp_vs_pp);
 
         let rela_file_names: Vec<_> = vp_vs_pp
             .iter()
@@ -57,47 +61,89 @@ impl ForwardBridge {
             })
             .collect();
 
+        let models_dir = format!("{}\\models", self.holder_dir);
+        let models_dir = Path::new(&models_dir);
+
+        if models_dir.exists() {
+            fs::remove_dir_all(models_dir);
+        }
+        fs::create_dir(models_dir).expect("error in create models dir");
+
         for filename in vp_vs_pp {  
             let mut grd = Grd::from_grd_file(&filename);
             let ix_start = filename.rfind("\\").unwrap();
             let ix_end = filename.rfind(".").unwrap();
 
-            let epicenter_start_x = 0;
-            let traces_num = 48;
-            let space = 1;
-            let offset = 2;
+            let epicenter_start_x = 1;
+            let traces_num = 120;
+            let step = 1;  // 炮间距
 
-            let mut forward_template = ForwardModelTemplate::default();
+            // let mut forward_template = ForwardModelTemplate::default();
 
             forward_template.mod_prefix(&self.target_prev);
 
-            grd.extract(&self.holder_dir, &filename[ix_start+1..ix_end], &mut forward_template, epicenter_start_x, traces_num, space, offset);
+            grd.extract(models_dir.to_str().unwrap(), &filename[ix_start+1..ix_end], &mut forward_template, epicenter_start_x, traces_num, step);
         }
 
 
     }
 
-    pub fn run(&self) {
-        let target_relative_dir = format!("{}{}", self.target_prev, self.count);
-        let target_dir = format!("{}\\{}", self.holder_dir, target_relative_dir);
+    pub fn run_range(&self, start: usize, end: usize) {  // 前闭后闭
+        let target_dir = format!("{}\\models", self.holder_dir);
 
-        let path = Path::new(&target_dir);
-        dbg!(path);
-        if !path.exists() {
-            fs::create_dir(path).expect("can't create dir");
+        for i in start..end {
+            let dir = format!("{}\\{}{:03}", target_dir, self.target_prev, i);
+            let path = Path::new(dir);
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+            if file_name.starts_with() && path.is_dir() {
+                let copy_exe_file = format!("{}\\LUPENGmbNEW-PML.exe", path.to_str().unwrap());
+                fs::copy(&self.exe_file, &copy_exe_file).expect("error in copy exe file");
+                let cur_dir = env::current_dir().expect("error in get current dir");
+                env::set_current_dir(&path).expect("error in set dir");
+                let mut exe = Command::new(copy_exe_file);
+                let now = time::Instant::now();
+
+                let output = exe.output().expect("error in execute forward program");
+                let status = output.status;
+
+                let elapsed = now.elapsed();
+                let sec = (elapsed.as_secs() as f64) + (elapsed.subsec_nanos() as f64 / 1000_000_000.0);
+
+                if(status.success()) {
+                    println!("{} completed, using {} secends", file_name, sec);
+                }
+            }
         }
+    }
 
-        let copy_exe_file = format!("{}\\yzq-point.exe", path.to_str().unwrap());
-        let copy_config_file = format!("{}\\PARAMETER.txt", path.to_str().unwrap());
-        fs::copy(&self.exe_file, &copy_exe_file).expect("error in copy exe file");
-        fs::copy(&self.config_file, &copy_config_file).expect("error in copy config file");
-        println!("{}", copy_exe_file);
+    pub fn run(&self) {
+        let target_dir = format!("{}\\models", self.holder_dir);
 
-        let cur_dir = env::current_dir().expect("error in get current dir");
-        env::set_current_dir(path).expect("error in set dir");
-        let mut exe = Command::new(copy_exe_file);
-        let status = exe.status().expect("error in execute forward program");
-        dbg!(status);
+        let dirs = fs::read_dir(target_dir).expect("can't read model dir");
+        for dir in dirs {
+            if dir.is_ok() {
+                let path = dir.unwrap().path();
+                let file_name = path.file_name().unwrap().to_str().unwrap();
+                if file_name.starts_with(&self.target_prev) && path.is_dir() {
+                    let copy_exe_file = format!("{}\\LUPENGmbNEW-PML.exe", path.to_str().unwrap());
+                    fs::copy(&self.exe_file, &copy_exe_file).expect("error in copy exe file");
+                    let cur_dir = env::current_dir().expect("error in get current dir");
+                    env::set_current_dir(&path).expect("error in set dir");
+                    let mut exe = Command::new(copy_exe_file);
+                    let now = time::Instant::now();
+
+                    let output = exe.output().expect("error in execute forward program");
+                    let status = output.status;
+
+                    let elapsed = now.elapsed();
+                    let sec = (elapsed.as_secs() as f64) + (elapsed.subsec_nanos() as f64 / 1000_000_000.0);
+
+                    if(status.success()) {
+                        println!("{} completed, using {} secends", file_name, sec);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -135,14 +181,14 @@ impl Default for ForwardModelTemplate {
         ForwardModelTemplate {
             diff_order: 10,
             absorb_boundary_thickness: 200,
-            dt: 0.00025,
+            dt: 0.0005,
             points: 4096,
-            main_freq: 10.0,
+            main_freq: 30.0,
             delay: 0.1,
             epicentre_x: 1,
             epicentre_z: 1,
             seismometers_z: 1,
-            source_type: PointSourceType::Harmomegathus,
+            source_type: PointSourceType::Vertical,
             vp_grd: "modvp.grd".to_string(),
             vs_grd: "modvs.grd".to_string(),
             pp_grd: "modpp.grd".to_string(),
@@ -223,6 +269,14 @@ impl ForwardModelTemplate {
         self.self_start = start as u32;
         self.self_end = end as u32;
 
+    }
+
+    pub fn set_points(&mut self, value: u32) {
+        self.points = value;
+    }
+
+    pub fn set_dt(&mut self, value: f64) {
+        self.dt = value;
     }
 
     pub fn mod_prefix(&mut self, prefix: &str) {
