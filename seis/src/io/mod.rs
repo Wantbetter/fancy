@@ -1,4 +1,5 @@
 pub mod grd;
+pub mod seg;
 
 use std::fs::File;
 use std::io::prelude::*;

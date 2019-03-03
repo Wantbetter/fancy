@@ -1,3 +1,4 @@
+use crate::forward::ForwardModelTemplate;
 use crate::io::ReadEx;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use na::DMatrix;
@@ -7,7 +8,6 @@ use std::io::prelude::*;
 use std::io::{BufReader, Error, SeekFrom};
 use std::ops::{Index, IndexMut};
 use std::path::Path;
-use crate::forward::ForwardModelTemplate;
 
 pub enum GrdFileType {
     // Binary,
@@ -50,28 +50,36 @@ impl Grd {
         }
     }
 
-
     /// 炮间距为一个道距
     /// space: 道间距
     /// offset: 偏移距
     /// 48道
-    pub fn extract(&mut self,  out_dir: &str, out_name: &str, forward_template: &mut ForwardModelTemplate, epicenter_start_x: i32, traces_num: usize, step: usize) {
-        let data = & self.data;
+    pub fn extract(
+        &mut self,
+        out_dir: &str,
+        out_name: &str,
+        forward_template: &mut ForwardModelTemplate,
+        epicenter_start_x: i32,
+        traces_num: usize,
+        step: usize,
+    ) {
+        let data = &self.data;
         let max_len = self.cols - traces_num as i32;
         for i in 0..max_len as usize {
-            let mut sample = data.columns(epicenter_start_x as usize + i * step, traces_num as usize).clone_owned();
-            let mut new_grd = self.clone();
+            let start = epicenter_start_x as usize + i * step;
+            let mut sample = data.columns(start, traces_num as usize).clone_owned();
+            let mut new_grd = self.clone();  //TODO:优化
             new_grd.rows = sample.nrows() as i32;
             new_grd.cols = sample.ncols() as i32;
             new_grd.x_size = self.x_size();
             new_grd.y_size = self.y_size();
-            new_grd.xll = 0.0;
+            new_grd.xll = start as f64;
             new_grd.yll = self.yll;
             new_grd.z_min = sample.min() as f64;
             new_grd.z_max = sample.max() as f64;
             std::mem::replace(&mut new_grd.data, sample);
-            let split_point = out_name.len()-2;
-            let out_name_front = &out_name[..split_point];  //模型名字
+            let split_point = out_name.len() - 2;
+            let out_name_front = &out_name[..split_point]; //模型名字
             let tmp_str = format!("{}\\{}{:03}", out_dir, out_name_front, i);
             let out_dir_path = Path::new(&tmp_str);
             if !out_dir_path.exists() {
@@ -80,14 +88,16 @@ impl Grd {
             let out_sub_dir = out_dir_path.file_name().unwrap().to_str().unwrap();
             let out_name_end = &out_name[split_point..]; //模型类型vp/vs/pp
             let rela_name = format!("{}{:03}", out_name_front, i);
-            let out_path = format!("{}\\{}\\{}{}.grd", out_dir, out_sub_dir, rela_name, out_name_end);
+            let out_path = format!(
+                "{}\\{}\\{}{}.grd",
+                out_dir, out_sub_dir, rela_name, out_name_end
+            );
             forward_template.mod_prefix(&rela_name);
             forward_template.epicentre_x(1);
             forward_template.write(&tmp_str);
             new_grd.write_file(&out_path, GrdFileType::Ascii);
         }
     }
-
 }
 
 impl Grd {
@@ -304,7 +314,6 @@ impl Grd {
     pub fn z_max(&self) -> f64 {
         self.z_max
     }
-
 }
 
 //弃用
