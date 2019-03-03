@@ -1,15 +1,7 @@
-extern crate seis;
 extern crate nalgebra as na;
+extern crate seis;
 
-use seis::io::grd;
-use seis::io::grd::GrdFileType;
 use seis::forward;
-use seis::io::seg;
-
-use std::env;
-use std::fs;
-use std::path::Path;
-use std::process::Command;
 
 struct ForwardBridge {
     exe_file: String,      // source exe file path
@@ -19,26 +11,21 @@ struct ForwardBridge {
 }
 
 fn main() {
-    // let forward = forward::ForwardBridge::new(
-    //     r"F:\毕设-研究生\地震波理论课相关软件\地震波理论模拟实习\LUPENGmbNEW-PML.exe", 
-    //     r"F:\毕设-研究生\地震波理论课相关软件\地震波理论模拟实习\PARAMETER.txt", 
-    //     r"F:\毕设-研究生\data\地堑", 
-    //     "garden");
-
-    // let mut forward_template = forward::ForwardModelTemplate::default();
-
-    // forward_template.set_points(2048);
-
-    // forward.model_ready(forward_template);
-
-    // forward.run();
-    
-    // dbg!(seg_data);
+    let forward = forward::ForwardBridge::new(
+        r"G:\毕设数据\Source\FKW-Point-MB-R.exe",
+        r"G:\毕设数据\Model\地堑",
+        "graben",
+    );
 
     let mut forward_template = forward::ForwardModelTemplate::default();
 
-    forward_template.mod_prefix("dx-2m");
+    forward.model_ready(forward_template);
 
-    forward_template.write(r"F:\毕设-研究生\data\dx=2m-Test");
+    forward.run("FKW-Point-MB-R.exe");
 
+    // let mut forward_template = forward::ForwardModelTemplate::default();
+
+    // forward_template.set_mod_prefix("dx-2m");
+
+    // forward_template.write(r"F:\毕设-研究生\data\dx=2m-Test");
 }

@@ -1,7 +1,7 @@
 pub mod grd;
 pub mod seg;
 
-use std::fs::File;
+
 use std::io::prelude::*;
 
 fn u8_arr_to_string(u8_arr: Vec<u8>) -> String {

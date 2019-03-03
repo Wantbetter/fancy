@@ -1,6 +1,6 @@
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use na::DMatrix;
-use std::fs;
+
 use std::fs::File;
 use std::io::{BufReader, Cursor, Error, Read, SeekFrom, Write};
 use std::mem;
@@ -33,7 +33,7 @@ impl Seg {
 
         let mut data_vec = vec![0.0f32; nn * mm];
         let mut bytes_vec = vec![0; nn * mm * mem::size_of::<f32>()];
-        let bytes = file.read_exact(&mut bytes_vec);
+        file.read_exact(&mut bytes_vec).expect("error in read cdp bytes");
         let mut bytes_cursor = Cursor::new(bytes_vec);
 
         for v_mut in data_vec.iter_mut() {

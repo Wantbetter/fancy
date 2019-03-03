@@ -6,7 +6,7 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Error, SeekFrom};
-use std::ops::{Index, IndexMut};
+
 use std::path::Path;
 
 pub enum GrdFileType {
@@ -57,17 +57,25 @@ impl Grd {
     pub fn extract(
         &mut self,
         out_dir: &str,
-        out_name: &str,
+        out_name: &str, // 无后缀
         forward_template: &mut ForwardModelTemplate,
         epicenter_start_x: i32,
         traces_num: usize,
         step: usize,
     ) {
+        // exclusive_range_pattern
         let data = &self.data;
-        let max_len = self.cols - traces_num as i32;
-        for i in 0..max_len as usize {
+
+        for i in 0..data.ncols() {
             let start = epicenter_start_x as usize + i * step;
-            let mut sample = data.columns(start, traces_num as usize).clone_owned();
+            let ncols = data.ncols();
+            // dbg!(ncols - start);
+            let sample = match ncols - start {
+                v if v >= traces_num && v <= ncols => data.columns(start, traces_num).clone_owned(),
+                v if v >= 48 && v < traces_num => data.columns(start, ncols - start).clone_owned(),
+                _ => break,
+            };
+
             let mut new_grd = self.clone();  //TODO:优化
             new_grd.rows = sample.nrows() as i32;
             new_grd.cols = sample.ncols() as i32;
@@ -80,21 +88,25 @@ impl Grd {
             std::mem::replace(&mut new_grd.data, sample);
             let split_point = out_name.len() - 2;
             let out_name_front = &out_name[..split_point]; //模型名字
-            let tmp_str = format!("{}\\{}{:03}", out_dir, out_name_front, i);
+            let tmp_str = format!("{}\\{}{:03}", out_dir, out_name_front, start);
             let out_dir_path = Path::new(&tmp_str);
             if !out_dir_path.exists() {
-                fs::create_dir(out_dir_path).expect("error in create grd out  dir");
+                fs::create_dir(out_dir_path).expect("error in create grd outdir");
             }
             let out_sub_dir = out_dir_path.file_name().unwrap().to_str().unwrap();
-            let out_name_end = &out_name[split_point..]; //模型类型vp/vs/pp
-            let rela_name = format!("{}{:03}", out_name_front, i);
+
+            let start_str = format!("{:03}", start);
+            // let out_name_end = &out_name[split_point..]; //模型类型vp/vs/pp
+            let rela_name = format!("{}{}", out_name, start_str);
+
             let out_path = format!(
-                "{}\\{}\\{}{}.grd",
-                out_dir, out_sub_dir, rela_name, out_name_end
+                "{}\\{}\\{}.grd",
+                out_dir, out_sub_dir, rela_name
             );
-            forward_template.mod_prefix(&rela_name);
-            forward_template.epicentre_x(1);
-            forward_template.write(&tmp_str);
+
+            forward_template.set_mod_suffix(&start_str);
+            forward_template.write_fkw(&tmp_str);
+            // dbg!(&out_path);
             new_grd.write_file(&out_path, GrdFileType::Ascii);
         }
     }
@@ -103,7 +115,7 @@ impl Grd {
 impl Grd {
     pub fn from_grd_file(filename: &str) -> Grd {
         let mut grd_file = BufReader::new(File::open(filename).expect("error in opening grd file"));
-
+          
         let mark = grd_file.read_str(4);
 
         match mark.as_str() {
@@ -207,7 +219,7 @@ impl Grd {
         for i in 0usize..rows as usize {
             // column-major matrix
             for j in 0usize..cols as usize {
-                let mut v_buf = [0u8; 8];
+                let _v_buf = [0u8; 8];
                 data[(i, j)] = grd_file.read_f64::<LittleEndian>().unwrap();
             }
         }
@@ -226,12 +238,12 @@ impl Grd {
         }
     }
 
-    fn from_ascii_file(mut grd_file: BufReader<File>, mark: String) -> Grd {
-        let mut buf_reader = BufReader::new(grd_file);
+    fn from_ascii_file(grd_file: BufReader<File>, _mark: String) -> Grd {
+        let buf_reader = BufReader::new(grd_file);
 
         let mut lines = buf_reader.lines();
 
-        let x = vec![1, 2, 3];
+        let _x = vec![1, 2, 3];
         let mark = Grd::process_error(lines.next());
         let (cols, rows) = Grd::process_split::<i32>(&Grd::process_error(lines.next()));
         let (xll, xend) = Grd::process_split::<f64>(&Grd::process_error(lines.next()));
@@ -273,7 +285,7 @@ impl Grd {
         U: std::str::FromStr,
         <U as std::str::FromStr>::Err: std::fmt::Debug,
     {
-        let mut ss: Vec<&str> = s
+        let ss: Vec<&str> = s
             .trim()
             .split(char::is_whitespace)
             .filter(|item| *item != "")

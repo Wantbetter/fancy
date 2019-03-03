@@ -2,11 +2,11 @@ extern crate actix;
 extern crate actix_web;
 extern crate env_logger;
 
-use std::{env, io};
+use std::{env};
 
-use actix_web::http::{header, Method, StatusCode};
+use actix_web::http::{StatusCode};
 use actix_web::middleware::session;
-use actix_web::{fs, http, middleware, server, App, HttpRequest, HttpResponse, Result};
+use actix_web::{fs, middleware, server, App, HttpRequest, HttpResponse, Result};
 
 fn index(req: &HttpRequest) -> Result<HttpResponse> {
     println!("{:?}", req);
@@ -23,7 +23,7 @@ fn main() {
 
     let sys = actix::System::new("fancy");
 
-    let addr = server::new(|| {
+    let _addr = server::new(|| {
         App::new()
             .middleware(middleware::Logger::default())
             .middleware(session::SessionStorage::new(
