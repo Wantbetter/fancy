@@ -70,3 +70,7 @@ impl Seg {
         file.write_all(data_bytes).unwrap();
     }
 }
+
+impl Seg {
+    // pub fn extract()
+}

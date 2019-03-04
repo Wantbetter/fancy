@@ -50,7 +50,7 @@ impl ForwardBridge {
         let models_dir = Path::new(&models_dir);
 
         if models_dir.exists() {
-            fs::remove_dir_all(models_dir);
+            fs::remove_dir_all(models_dir).expect("error in remove models dir");
         }
         fs::create_dir(models_dir).expect("error in create models dir");
 
@@ -107,10 +107,14 @@ impl ForwardBridge {
         }
     }
 
-    pub fn run(&self, exe_file_name: &str) {
+    pub fn run(&self) {
         let target_dir = format!("{}\\models", self.holder_dir);
 
         let dirs = fs::read_dir(target_dir).expect("can't read model dir");
+
+        let exe_file_path = Path::new(&self.exe_file);
+        let exe_file_name = exe_file_path.file_name().unwrap().to_str().unwrap();
+
         for dir in dirs {
             if dir.is_ok() {
                 let path = dir.unwrap().path();
@@ -137,6 +141,14 @@ impl ForwardBridge {
                 }
             }
         }
+    }
+
+    pub fn target_prev(&self) -> &str {
+        self.target_prev.as_str()
+    }
+
+    pub fn holder_dir(&self) -> &str {
+        self.holder_dir.as_str()
     }
 }
 
@@ -233,7 +245,7 @@ impl ForwardModelTemplate {
         str_vec
     }
 
-    pub fn write_fkw(&self, dir_name: &str) {
+    pub fn write_fkw(&self, dir_name: &str) {  // fkw-Point.exe
         let path_str = format!("{}\\fkwPARAMETER.txt", dir_name);
         let path = Path::new(&path_str);
         let mut file = fs::File::create(path).expect("error in create parameter file");
@@ -325,6 +337,14 @@ impl ForwardModelTemplate {
         }
     }
 
+    pub fn init(&mut self, prefix: &str) {
+        self.mode_prefix = prefix.to_string();
+    }
+
+    pub fn mode_prefix(&self) -> &str {
+        self.mode_prefix.as_str()
+    }
+
     pub fn set_epicentre_x(&mut self, value: i32) {
         self.epicentre_x = value;
     }
@@ -356,5 +376,11 @@ impl ForwardModelTemplate {
         self.cdp_z2 = format!("{}-point-z2{}.cdp", self.mode_prefix, suffix);
         self.wave_field_x = format!("{}-wave-X{}.dat", self.mode_prefix, suffix);
         self.wave_field_x = format!("{}-wave-Z{}.dat", self.mode_prefix, suffix);
+    }
+}
+
+impl ForwardModelTemplate {
+    pub fn from_fkw() {
+        
     }
 }
